@@ -4,7 +4,6 @@
 
 #    include "D:\PostgreSql\include\libpq-fe.h"
 #    include <iostream>
-#    include "packages/nlohmann.json.3.11.2/build/native/include/nlohmann/json.hpp"
 #    include <sstream>
 #    include <memory>
 #    include <vector>
@@ -49,6 +48,14 @@ namespace NWeather {
 			return !CoordinatesApiKey.empty() && !WeatherApiKey.empty();
 		}
 
+		std::string GetCoordinatesApiKey() const noexcept {
+			return CoordinatesApiKey;
+		}
+
+		std::string GetWeatherApiKey() const noexcept {
+			return WeatherApiKey;
+		}
+
 	};
 
 
@@ -67,12 +74,6 @@ namespace NWeather {
 
 		}
 
-		TMetar(const TMetar& metar) 
-			: Icao()
-			, Metar() 
-		{
-		}
-
 
 		void FormMetar();
 
@@ -88,9 +89,11 @@ namespace NWeather {
 		}
 
 	private:
-		std::string GetWeather(double lat, double lon) const;
+		std::string GetWeather(std::string lat, std::string lon) const;
 
 		std::string GetCoordinates() const;
+
+		std::string GetData() const;
 
 		void ParseJsonWeather(std::string jsonWeather);
 

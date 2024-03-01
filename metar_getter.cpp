@@ -2,7 +2,6 @@
 
 #include "metar_getter.h"
 
-
 #ifndef METAR_GETTER
 
 void NWeather::TMetar::FormMetar() {
@@ -12,22 +11,18 @@ void NWeather::TMetar::FormMetar() {
 	// TODO: 4. write METAR or request weather data; (use GetWeather and GetCoordinates);
 	// TODO: 5*. parse (ParseJsonWeather) and form METAR;
 	// TODO: 6*. write in DB result if data was updated;
+	ParseJsonWeather(GetData());
+
 }
 
-std::string NWeather::TMetar::GetWeather(double lat, double lon) const {
+std::string NWeather::TMetar::GetWeather(std::string lat, std::string lon) const {
 	std::string result;
 	std::string pathInterm = "data/2.5/weather?lat=";
-	{
-		std::ostringstream soutLat, soutLon;
-		soutLat << lat;
-		soutLon << lon;
-
-		pathInterm += soutLat.str();
-		pathInterm += "&lon=";
-		pathInterm += soutLon.str();
-		pathInterm += "&appid=";
-		pathInterm += ApiKeys.WeatherApiKey;
-	}
+	pathInterm += lat;
+	pathInterm += "&lon=";
+	pathInterm += lon;
+	pathInterm += "&appid=";
+	pathInterm += ApiKeys.GetWeatherApiKey();
 
 
 
@@ -90,7 +85,7 @@ std::string NWeather::TMetar::GetWeather(double lat, double lon) const {
 std::string NWeather::TMetar::GetCoordinates() const {
 	std::string result;
 	std::string pathInterm = "1.x/?apikey=";
-	pathInterm += ApiKeys.CoordinatesApiKey;
+	pathInterm += ApiKeys.GetCoordinatesApiKey();
 	pathInterm += "&geocode=";
 	pathInterm += Icao;
 	pathInterm += "&format=json";
@@ -153,8 +148,18 @@ std::string NWeather::TMetar::GetCoordinates() const {
 	return result;
 }
 
+std::string NWeather::TMetar::GetData() const {
+	std::string jsonCoordsData = GetCoordinates();
+
+	auto coordsBegin = jsonCoordsData.find(":", jsonCoordsData.find("\"pos\"")) + 2;
+	std::string coordsOfIcao = jsonCoordsData.substr(coordsBegin, 
+		jsonCoordsData.find("\"", coordsBegin) - coordsBegin);
+
+	return GetWeather(coordsOfIcao.substr(0, coordsOfIcao.find(" ")), coordsOfIcao.substr(coordsOfIcao.find(" ") + 1));
+}
+
 void NWeather::TMetar::ParseJsonWeather(std::string jsonWeather) {
-	// TODO: 1. Parse json file according to rules of METAR;
+
 }
 
 #endif
