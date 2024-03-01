@@ -6,14 +6,14 @@
 
 namespace NMetarService {
 
-	class TService {
+	class TMetarService {
 	private:
 		const std::string OutputMetarFile;
 		std::vector<NWeather::TMetar> Metars;
 		NWeather::TApiKeys ApiKeys;
 
 	public:
-		TService(std::string icaoCodesFile, std::string apiKeysFile, std::string outputMetar) 
+		TMetarService(std::string icaoCodesFile, std::string apiKeysFile, std::string outputMetar) 
 			: OutputMetarFile(std::move(outputMetar))
 		{
 			GetIcaoCodes(icaoCodesFile, apiKeysFile);
@@ -26,6 +26,7 @@ namespace NMetarService {
 				metar.FormMetar();
 				metars.push_back(metar.GetMetar());
 			}
+
 
 			std::ofstream foutMetar(OutputMetarFile);
 
@@ -60,7 +61,7 @@ namespace NMetarService {
 
 
 int main() {
-	NMetarService::TService metarService("D:\\MetarProject\\metar_main\\ICAO_Codes.txt", 
+	NMetarService::TMetarService metarService("D:\\MetarProject\\metar_main\\ICAO_Codes.txt", 
 		"D:\\MetarProject\\metar_main\\api_keys.txt", "D:\\MetarProject\\metar_main\\metars.txt");
 
 	auto metars = metarService.GetMetar();

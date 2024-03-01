@@ -2,10 +2,11 @@
 
 #ifndef METAR_GETTER
 
+#    include <ctime>
 #    include "D:\PostgreSql\include\libpq-fe.h"
 #    include <iostream>
-#    include <sstream>
 #    include <memory>
+#    include <sstream>
 #    include <vector>
 #    include <Windows.h>
 #    include <wininet.h>
@@ -95,6 +96,18 @@ namespace NWeather {
 
 		std::string GetData() const;
 
+		void AddZuluTime();
+
+		void AddWindInfo(const std::string& jsonWeather);
+
+		void AddVisibility(const std::string& jsonWeather);
+
+		void AddWeatherScene(const std::string& jsonWeather);
+
+		void AddTemperature(const std::string& jsonWeather);
+
+		void AddPressure(const std::string& jsonWeather);
+
 		void ParseJsonWeather(std::string jsonWeather);
 
 	};
@@ -102,5 +115,6 @@ namespace NWeather {
 	TApiKeys TMetar::ApiKeys = TApiKeys();
 
 }
+
 
 #endif
