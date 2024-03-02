@@ -6,13 +6,28 @@
 
 // TODO: write it later
 void NWeather::TMetar::FormMetar() {
-	// TODO: 1. set connection with DB;
-	// TODO: 2. get data;
-	// TODO: 3. check data;
-	// TODO: 4. write METAR or request weather data; (use GetWeather and GetCoordinates);
-	// TODO: 5*. parse (ParseJsonWeather) and form METAR;
-	// TODO: 6*. write in DB result if data was updated;
-	ParseJsonWeather(GetData());
+	// Set Connection with DB, get data, check data:
+	// TODO: Change pwd
+	//std::unique_ptr<PGconn> connection(PQsetdbLogin("localhost", "5432", 
+		//nullptr, nullptr, "postgres", "postgres", "WinServerPost"));
+
+	//auto condition = PQstatus(connection.get());
+	///
+
+	/*if (condition == CONNECTION_OK) {
+		std::cout << "CONNECTION is OK\n";
+	} else {
+		std::cout << "CONNECTION is BAD\n";
+	}*/
+
+	// If data is old, get new data and parse it:
+	
+	//ParseJsonWeather(GetData());
+
+	// Write data in the DB if metar was updated:
+	//...
+	///
+
 
 }
 
@@ -150,13 +165,29 @@ std::string NWeather::TMetar::GetCoordinates() const {
 }
 
 std::string NWeather::TMetar::GetData() const {
-	std::string jsonCoordsData = GetCoordinates();
+	std::string jsonCoordsData;
+	
+	while (true) {
+		try {
+			jsonCoordsData = GetCoordinates();
+			break;
+		} catch (NWeather::THttpException& httpExcp) {
+			continue;
+		}
+	}
 
 	auto coordsBegin = jsonCoordsData.find(":", jsonCoordsData.find("\"pos\"")) + 2;
 	std::string coordsOfIcao = jsonCoordsData.substr(coordsBegin, 
 		jsonCoordsData.find("\"", coordsBegin) - coordsBegin);
 
-	return GetWeather(coordsOfIcao.substr(0, coordsOfIcao.find(" ")), coordsOfIcao.substr(coordsOfIcao.find(" ") + 1));
+	while (true) {
+		try {
+			return GetWeather(coordsOfIcao.substr(0, coordsOfIcao.find(" ")), coordsOfIcao.substr(coordsOfIcao.find(" ") + 1));
+		} catch (NWeather::THttpException& httpExcp) {
+			continue;
+		}
+	}
+
 }
 
 // Define ZULU-time
