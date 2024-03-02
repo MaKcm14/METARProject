@@ -5,7 +5,7 @@
 #ifndef METAR_GETTER
 
 // Form the METAR:
-void NWeather::TMetar::FormMetar() { //TODO: delete all debug's parts:
+void NWeather::TMetar::FormMetar() {
 	PGconn* connection = PQsetdbLogin("localhost", "5432",
 		nullptr, nullptr, "postgres", "postgres", "WinServerPost");
 	auto condition = PQstatus(connection);
