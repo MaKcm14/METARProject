@@ -4,30 +4,112 @@
 
 #ifndef METAR_GETTER
 
-// TODO: write it later
+// Form the METAR:
 void NWeather::TMetar::FormMetar() {
-	// Set Connection with DB, get data, check data:
-	// TODO: Change pwd
-	//std::unique_ptr<PGconn> connection(PQsetdbLogin("localhost", "5432", 
-		//nullptr, nullptr, "postgres", "postgres", "WinServerPost"));
+	PGconn* connection = PQsetdbLogin("localhost", "5432", 
+		nullptr, nullptr, "postgres", "postgres", "WinServerPost");
+	auto condition = PQstatus(connection);
 
-	//auto condition = PQstatus(connection.get());
-	///
+	if (condition == CONNECTION_BAD) {
+		PQfinish(connection);
+		throw std::runtime_error("can't connect to DB: check connection data");
+	}
 
-	/*if (condition == CONNECTION_OK) {
-		std::cout << "CONNECTION is OK\n";
-	} else {
-		std::cout << "CONNECTION is BAD\n";
-	}*/
 
-	// If data is old, get new data and parse it:
+	std::string queryIcaoStr = "SELECT * FROM metar_info\nWHERE icao = '" + Icao + "'";
+	auto resultOfQuery = PQexec(connection, queryIcaoStr.c_str());
+
+	if (resultOfQuery == nullptr) {
+		PQfinish(connection);
+		throw std::logic_error("SQL-query isn't correct");
+	}
+	std::string metarTime = PQgetvalue(resultOfQuery, 0, 2);
+
+
+	bool checkMetarTime = true;
+	std::time_t curTime = time(0);
+	std::tm* locTime = localtime(&curTime);
 	
-	//ParseJsonWeather(GetData());
+	std::vector<std::string> partsData = { metarTime.substr(0, 4), metarTime.substr(5, 2),
+	metarTime.substr(8, 2), metarTime.substr(11, 2), metarTime.substr(14, 2) };
 
-	// Write data in the DB if metar was updated:
-	//...
-	///
+	for (size_t i = 0; i != partsData.size(); ++i) {
+		int32_t part;
+		std::istringstream sin(partsData[i]);
+		
+		sin >> part;
+		if (!i) {
+			if (part < locTime->tm_year) {
+				checkMetarTime = false;
+				break;
+			}
+		} else if (i == 1) {
+			if (part < locTime->tm_mon) {
+				checkMetarTime = false;
+				break;
+			}
+		} else if (i == 2) {
+			if (part < locTime->tm_mday) {
+				checkMetarTime = false;
+				break;
+			}
+		} else if (i == 3) {
+			if (part < locTime->tm_hour) {
+				checkMetarTime = false;
+				break;
+			}
+		} else if (i == 4) {
+			if ((locTime->tm_min - part) > 30) {
+				checkMetarTime = false;
+				break;
+			}
+		}
+	}
+	
+	if (checkMetarTime) {
+		Metar = PQgetvalue(resultOfQuery, 0, 1);
+		PQfinish(connection);
+		return;
+	} else {
+		ParseJsonWeather(GetData());
+	}
+	
 
+	curTime = time(0);
+	locTime = localtime(&curTime);
+	std::ostringstream sout;
+
+	sout << locTime->tm_year + 1900 << "-";
+	if (locTime->tm_mon < 10) {
+		sout << "0";
+	}
+	sout << locTime->tm_mon << "-";
+
+	if (locTime->tm_mday < 10) {
+		sout << "0";
+	}
+	sout << locTime->tm_mday << " ";
+
+	if (locTime->tm_hour < 10) {
+		sout << "0";
+	}
+	sout << locTime->tm_hour << ":";
+	
+	if (locTime->tm_min < 10) {
+		sout << "0";
+	}
+	sout << locTime->tm_min << ":00";
+	
+	queryIcaoStr = "UPDATE metar_info\nSET metar = '" + Metar + "', metar_time = '" + sout.str() + "'\nWHERE icao = '" + Icao + "'";
+	resultOfQuery = PQexec(connection, queryIcaoStr.c_str());
+
+	if (resultOfQuery == nullptr) {
+		PQfinish(connection);
+		throw std::logic_error("SQL-query isn't correct");
+	}
+
+
+	PQfinish(connection);
 
 }
 
