@@ -63,8 +63,8 @@ namespace NMetarService {
 int main() {
 	NMetarService::TMetarService metarService("D:\\MetarProject\\metar_main\\ICAO_Codes.txt", 
 		"D:\\MetarProject\\metar_main\\api_keys.txt", "D:\\MetarProject\\metar_main\\metars.txt");
-
+	
 	auto metars = metarService.GetMetar();
-
+	
 	return 0;
 }

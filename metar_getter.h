@@ -2,11 +2,13 @@
 
 #ifndef METAR_GETTER
 
+#    include <chrono>
 #    include <ctime>
 #    include "D:\PostgreSql\include\libpq-fe.h"
 #    include <iostream>
 #    include <memory>
 #    include <sstream>
+#    include <thread>
 #    include <vector>
 #    include <Windows.h>
 #    include <wininet.h>

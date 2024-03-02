@@ -5,8 +5,8 @@
 #ifndef METAR_GETTER
 
 // Form the METAR:
-void NWeather::TMetar::FormMetar() {
-	PGconn* connection = PQsetdbLogin("localhost", "5432", 
+void NWeather::TMetar::FormMetar() { //TODO: delete all debug's parts:
+	PGconn* connection = PQsetdbLogin("localhost", "5432",
 		nullptr, nullptr, "postgres", "postgres", "WinServerPost");
 	auto condition = PQstatus(connection);
 
@@ -16,27 +16,33 @@ void NWeather::TMetar::FormMetar() {
 	}
 
 
+
 	std::string queryIcaoStr = "SELECT * FROM metar_info\nWHERE icao = '" + Icao + "'";
 	auto resultOfQuery = PQexec(connection, queryIcaoStr.c_str());
 
-	if (resultOfQuery == nullptr) {
+	if (resultOfQuery == nullptr || PQresultStatus(resultOfQuery) == PGRES_FATAL_ERROR) {
+		PQclear(resultOfQuery);
 		PQfinish(connection);
-		throw std::logic_error("SQL-query isn't correct");
+		throw std::logic_error("SQL-query isn't correct or wasn't finished correctly");
 	}
+	
 	std::string metarTime = PQgetvalue(resultOfQuery, 0, 2);
+	
 
 
 	bool checkMetarTime = true;
 	std::time_t curTime = time(0);
 	std::tm* locTime = localtime(&curTime);
-	
+
 	std::vector<std::string> partsData = { metarTime.substr(0, 4), metarTime.substr(5, 2),
 	metarTime.substr(8, 2), metarTime.substr(11, 2), metarTime.substr(14, 2) };
+
+
 
 	for (size_t i = 0; i != partsData.size(); ++i) {
 		int32_t part;
 		std::istringstream sin(partsData[i]);
-		
+
 		sin >> part;
 		if (!i) {
 			if (part < locTime->tm_year) {
@@ -59,21 +65,25 @@ void NWeather::TMetar::FormMetar() {
 				break;
 			}
 		} else if (i == 4) {
-			if ((locTime->tm_min - part) > 30) {
+			if ((locTime->tm_min - part) > 15) {
 				checkMetarTime = false;
 				break;
 			}
 		}
 	}
-	
+
+
 	if (checkMetarTime) {
 		Metar = PQgetvalue(resultOfQuery, 0, 1);
+		PQclear(resultOfQuery);
 		PQfinish(connection);
 		return;
 	} else {
 		ParseJsonWeather(GetData());
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
-	
+
+
 
 	curTime = time(0);
 	locTime = localtime(&curTime);
@@ -94,21 +104,23 @@ void NWeather::TMetar::FormMetar() {
 		sout << "0";
 	}
 	sout << locTime->tm_hour << ":";
-	
+
 	if (locTime->tm_min < 10) {
 		sout << "0";
 	}
 	sout << locTime->tm_min << ":00";
-	
+
+	PQclear(resultOfQuery);
 	queryIcaoStr = "UPDATE metar_info\nSET metar = '" + Metar + "', metar_time = '" + sout.str() + "'\nWHERE icao = '" + Icao + "'";
 	resultOfQuery = PQexec(connection, queryIcaoStr.c_str());
 
 	if (resultOfQuery == nullptr) {
+		PQclear(resultOfQuery);
 		PQfinish(connection);
 		throw std::logic_error("SQL-query isn't correct");
 	}
 
-
+	PQclear(resultOfQuery);
 	PQfinish(connection);
 
 }
@@ -121,7 +133,6 @@ std::string NWeather::TMetar::GetWeather(std::string lat, std::string lon) const
 	pathInterm += lon;
 	pathInterm += "&appid=";
 	pathInterm += ApiKeys.GetWeatherApiKey();
-
 
 
 	std::unique_ptr<wchar_t> path(new wchar_t[pathInterm.size() + 1]);
@@ -252,19 +263,30 @@ std::string NWeather::TMetar::GetData() const {
 	while (true) {
 		try {
 			jsonCoordsData = GetCoordinates();
-			break;
+			if (jsonCoordsData.substr(jsonCoordsData.find("found") + 7, 1) != "0") {
+				break;
+			} else {
+				continue;
+			}
 		} catch (NWeather::THttpException& httpExcp) {
 			continue;
 		}
 	}
 
+
 	auto coordsBegin = jsonCoordsData.find(":", jsonCoordsData.find("\"pos\"")) + 2;
 	std::string coordsOfIcao = jsonCoordsData.substr(coordsBegin, 
 		jsonCoordsData.find("\"", coordsBegin) - coordsBegin);
-
+	
+	
 	while (true) {
 		try {
-			return GetWeather(coordsOfIcao.substr(0, coordsOfIcao.find(" ")), coordsOfIcao.substr(coordsOfIcao.find(" ") + 1));
+			std::string jsonWeather = GetWeather(coordsOfIcao.substr(coordsOfIcao.find(" ") + 1), 
+				coordsOfIcao.substr(0, coordsOfIcao.find(" ")));
+			if (jsonWeather.substr(jsonWeather.find("cod") + 5, 3)[0] != '2') {
+				continue;
+			}
+			return jsonWeather;
 		} catch (NWeather::THttpException& httpExcp) {
 			continue;
 		}
@@ -316,6 +338,13 @@ void NWeather::TMetar::AddWindInfo(const std::string& jsonWeather) {
 
 		posInfoBeg = windInfo.find(":", posInfoBeg + 1);
 		posInfoEnd = windInfo.find(",", posInfoEnd + 1);
+		
+	}
+	
+	if (windDesc[1].size() == 2) {
+		Metar += "0";
+	} else if (windDesc[1].size() == 1) {
+		Metar += "0";
 	}
 
 	Metar += windDesc[1];
@@ -324,7 +353,7 @@ void NWeather::TMetar::AddWindInfo(const std::string& jsonWeather) {
 	}
 	Metar += windDesc[0];
 
-	if (windDesc.back().size() >= 2) {
+	if (windDesc.size() > 2 && windDesc.back().size() >= 2) {
 		Metar += "G" + windDesc.back();
 	}
 
