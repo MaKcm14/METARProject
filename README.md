@@ -5,6 +5,8 @@ Application that helps get and store info about the weather (METAR) in airports 
 <hr>
 <h2>How to install the library?</h2>
 Library uses the STL and Winsock lib from WinApi.
+Current project consists only of the sources and headers.
+For building you need to use CMake or another system.
 <br>
 <hr>
 <h2>How to use the library?</h2>
