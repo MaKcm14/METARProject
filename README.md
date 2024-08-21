@@ -54,6 +54,12 @@ The order of the API keys in the file must correspond with the order of the serv
 
 <br>
 <hr>
+<h2>Make sure</h2>
+
+- PostgreSQL server is running
+
+<br>
+<hr>
 <h2>P.S.</h2>
 <h3>Be carefully</h3>
 METAR summary of this application is very approximately and defective and you CAN'T use it as
